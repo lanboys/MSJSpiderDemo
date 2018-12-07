@@ -3,7 +3,7 @@ import MySQLdb
 
 
 class MysqlHelper:
-    def __init__(self, host='localhost', port=3306, db='food', user='root', passwd='admin',
+    def __init__(self, host='47.106.96.179', port=3306, db='food', user='food', passwd='food',
                  charset='utf8'):
         self.conn = MySQLdb.connect(host=host, port=port, db=db, user=user, passwd=passwd,
                                     charset=charset)
