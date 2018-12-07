@@ -2,8 +2,6 @@
 import MySQLdb
 
 
-#  47.106.96.179
-
 class MysqlHelper:
     def __init__(self, host='localhost', port=3306, db='food', user='root', passwd='admin',
                  charset='utf8'):
