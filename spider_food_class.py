@@ -102,6 +102,10 @@ def loadFoodList():
     for row in rows:
         id, parent_id, url, total_page, current_page = row
 
+        total_page = total_page - 30
+        if total_page < current_page:
+            total_page = current_page + 5
+
         for page in range(current_page + 1, total_page + 1):
             page_ = "?&page="
             if "?" in url:
@@ -111,7 +115,7 @@ def loadFoodList():
             # 更新页码
             updateCurrentPage(id, page)
             # 休眠1秒
-            time.sleep(1)
+            # time.sleep(1)
 
 
 def updateCurrentPage(id, currentPage):
