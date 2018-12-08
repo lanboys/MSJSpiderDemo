@@ -14,8 +14,14 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/54.0.2840.99 Safari/537.36"
 }
+
+
+def getContent(url):
+    request = urllib2.Request(url, headers=headers)
+    return etree.HTML(urllib2.urlopen(request).read())
 
 
 def loadFoodClass1():
@@ -29,10 +35,10 @@ def loadFoodClass1():
         aList = dl.xpath("dt/a")
         for a in aList:
             text = a.text
-            href = a.attrib.get("href")
+            class_url = a.attrib.get("href")
 
-            sql = "insert into lb_food_class ( name , level , url ) values ( %s, %s, %s)"
-            params = (text, 1, href)
+            sql = "insert into lb_food_class ( name , level , class_url ) values ( %s, %s, %s)"
+            params = (text, 1, class_url)
             print(sql % params)
             MysqlHelper.MysqlHelper().cud(sql, params)
 
@@ -41,44 +47,40 @@ def loadFoodClass2():
     """
         爬取第二分类
     """
-    sql = "select url, id  from lb_food_class where level = %s"
+    sql = "select class_url, id  from lb_food_class where level = %s"
     params = (1,)
     print(sql % params)
     rows = MysqlHelper.MysqlHelper().fetchall(sql, params)
 
     for row in rows:
-        url, parentId = row
+        class_url, parentId = row
         # print (url, parentId)
-        dlList = getContent(url).xpath('//div[@class="main"]/div/div/dl')
+        dlList = getContent(class_url).xpath('//div[@class="main"]/div/div/dl')
         for dl in dlList:
             tag = dl.xpath("dt/text()")[0]
             aList = dl.xpath("dd/a")
             for a in aList:
                 text = a.text
-                href = a.attrib.get("href")
-                sql = "insert into lb_food_class ( name , parent_id , level , url , tag) values ( %s, %s, %s, %s, %s)"
-                params = (text, parentId, 2, href, tag)
+                class_url = a.attrib.get("href")
+                sql = "insert into lb_food_class ( name , parent_id , level , class_url , tag)" \
+                      " values ( %s, %s, %s, %s, %s)"
+                params = (text, parentId, 2, class_url, tag)
                 print(sql % params)
                 MysqlHelper.MysqlHelper().cud(sql, params)
-
-
-def getContent(url):
-    request = urllib2.Request(url, headers=headers)
-    return etree.HTML(urllib2.urlopen(request).read())
 
 
 def loadFoodPages():
     """
        爬取页码
     """
-    sql = "select url, id  from lb_food_class where level = %s and total_page = %s"
+    sql = "select class_url, id  from lb_food_class where level = %s and total_page = %s"
     params = (2, 0)
     print(sql % params)
     rows = MysqlHelper.MysqlHelper().fetchall(sql, params)
 
     for row in rows:
-        url, id = row
-        request = urllib2.Request(url, headers=headers)
+        class_url, id = row
+        request = urllib2.Request(class_url, headers=headers)
         html = urllib2.urlopen(request).read()
 
         page = re.compile(r'共(\d*)页').match(html).group(1)
@@ -93,13 +95,13 @@ def loadFoodPages():
 
 
 def loadFoodList():
-    sql = "select id, parent_id, url, total_page, current_page  from lb_food_class where level = %s " \
+    sql = "select id, parent_id, class_url, total_page, current_page  from lb_food_class where level = %s " \
           "and total_page > current_page and parent_id not in (6, 7)"
     loadFoodListComm(sql, 1)
 
 
 def loadFoodMaterialList():
-    sql = "select id, parent_id, url, total_page, current_page  from lb_food_class where level = %s " \
+    sql = "select id, parent_id, class_url, total_page, current_page  from lb_food_class where level = %s " \
           "and total_page > current_page and parent_id in (7, 7)"
     loadFoodListComm(sql, 2)
 
@@ -142,9 +144,9 @@ def loadFoodListPage(url, class1_id, class2_id):
     print (url)
     divList = getContent(url).xpath('//div[@class="listtyle1"]/a')
     for div in divList:
-        url = div.xpath("./@href")[0]
+        html_url = div.xpath("./@href")[0]
         title = div.xpath("./@title")[0]
-        logoUrl = div.xpath("img/@src")[0]
+        thumbnail_url = div.xpath("img/@src")[0]
 
         comment_num = 0
         popularity_num = 0
@@ -164,8 +166,11 @@ def loadFoodListPage(url, class1_id, class2_id):
             if m is not None:
                 step_num = m.group(1)
 
-        sql = "insert into lb_food ( name , class1_id , class2_id , comment_num , popularity_num , step_num , url , logo) values ( %s, %s, %s, %s, %s, %s, %s, %s )"
-        params = (title, class1_id, class2_id, comment_num, popularity_num, step_num, url, logoUrl)
+        sql = "insert into lb_food ( name , class1_id , class2_id , comment_num , popularity_num ," \
+              " step_num , html_url , thumbnail_url) values ( %s, %s, %s, %s, %s, %s, %s, %s )"
+        params = (
+            title, class1_id, class2_id, comment_num, popularity_num, step_num, html_url,
+            thumbnail_url)
         # print(sql % params)
         MysqlHelper.MysqlHelper().cud(sql, params)
 
@@ -174,16 +179,17 @@ def loadFoodMaterialListPage(url, class1_id, class2_id):
     print (url)
     divList = getContent(url).xpath('//div[@class="listtyle1"]')
     for div in divList:
-        href = div.xpath('div[@class="img"]/a/@href')[0]
-        logoUrl = div.xpath("div/a/img/@src")[0]
+        html_url = div.xpath('div[@class="img"]/a/@href')[0]
+        logo_url = div.xpath("div/a/img/@src")[0]
         title = div.xpath('div[@class="info1"]/h3/a/text()')[0]
         description = ""
         descriptionList = div.xpath('div[@class="info1"]/div/span/text()')
         for d in descriptionList:
             description = d
 
-        sql = "insert into lb_food_material ( name , class1_id , class2_id ,description, url , logo_url) values ( %s, %s, %s, %s, %s, %s)"
-        params = (title, class1_id, class2_id, description, href, logoUrl)
+        sql = "insert into lb_food_material ( name , class1_id , class2_id ,description, html_url," \
+              " logo_url) values ( %s, %s, %s, %s, %s, %s)"
+        params = (title, class1_id, class2_id, description, html_url, logo_url)
         # print(sql % params)
         MysqlHelper.MysqlHelper().cud(sql, params)
 
