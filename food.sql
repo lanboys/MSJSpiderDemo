@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50722
 File Encoding         : 65001
 
-Date: 2018-12-08 17:57:03
+Date: 2018-12-09 13:03:37
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -23,12 +23,12 @@ CREATE TABLE `lb_cook_process` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `food_id` int(11) DEFAULT NULL COMMENT '菜谱id',
   `step` int(11) DEFAULT NULL COMMENT '步骤排序',
-  `img_url` varchar(255) DEFAULT NULL COMMENT '图片，多个逗号隔开',
+  `img_url` varchar(500) DEFAULT NULL COMMENT '图片，多个逗号隔开',
   `content` varchar(500) DEFAULT NULL COMMENT '描述',
   `insert_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=266 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for lb_food
@@ -47,9 +47,9 @@ CREATE TABLE `lb_food` (
   `thumbnail_url` varchar(255) DEFAULT NULL COMMENT '列表缩略图地址',
   `is_spider_detail` tinyint(4) DEFAULT '0' COMMENT '是否爬取详情',
   `final_img_url` varchar(500) DEFAULT NULL COMMENT '成品图',
-  `materials_desc` varchar(500) DEFAULT NULL COMMENT '用料描述',
-  `suitable_label` varchar(255) DEFAULT NULL COMMENT '标签',
-  `cooking_skill` varchar(500) DEFAULT NULL COMMENT '烹饪技巧',
+  `materials_desc` varchar(2500) DEFAULT NULL COMMENT '用料描述',
+  `suitable_label` varchar(500) DEFAULT NULL COMMENT '标签',
+  `cooking_skill` varchar(2500) DEFAULT NULL COMMENT '烹饪技巧',
   `user_grade` varchar(255) DEFAULT NULL COMMENT '用户等级',
   `user_avatar_url` varchar(255) DEFAULT NULL,
   `user_url` varchar(255) DEFAULT NULL COMMENT '用户地址',
@@ -64,7 +64,7 @@ CREATE TABLE `lb_food` (
   `insert_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=61133 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for lb_food_
@@ -96,7 +96,7 @@ CREATE TABLE `lb_food_class` (
   `current_page` int(11) DEFAULT '0',
   `tag` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=154 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for lb_food_comment
@@ -109,12 +109,12 @@ CREATE TABLE `lb_food_comment` (
   `user_id` int(11) DEFAULT NULL,
   `user_avatar_url` varchar(255) NOT NULL,
   `user_url` varchar(255) DEFAULT '1',
-  `content` varchar(500) NOT NULL,
+  `content` varchar(1000) NOT NULL,
   `comment_time` datetime NOT NULL,
   `insert_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=166 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for lb_food_material
@@ -154,4 +154,4 @@ CREATE TABLE `lb_food_material_assoc` (
   `insert_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=242 DEFAULT CHARSET=utf8;

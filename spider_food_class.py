@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+import random
 import re
 import sys
 import time
@@ -20,6 +20,7 @@ headers = {
 
 
 def getContent(url):
+    print (url)
     request = urllib2.Request(url, headers=headers)
     return etree.HTML(urllib2.urlopen(request).read())
 
@@ -90,8 +91,13 @@ def loadFoodPages():
         print(sql % params)
         MysqlHelper.MysqlHelper().cud(sql, params)
 
-        # 休眠1秒
-        time.sleep(1)
+        sleepRandom()
+
+
+def sleepRandom():
+    m = random.randint(1, 3)
+    print("-------------休眠" + str(m) + "秒----------------")
+    time.sleep(m)
 
 
 def loadFoodList():
@@ -129,19 +135,18 @@ def loadFoodListComm(sql, type):
                 loadFoodMaterialListPage(url + page_ + str(page), id, parent_id)
             # 更新页码
             updateCurrentPage(id, page)
-            # 休眠1秒
-            time.sleep(1)
+
+            sleepRandom()
 
 
-def updateCurrentPage(id, currentPage):
+def updateCurrentPage(food_class_id, currentPage):
     sql = "update lb_food_class set current_page =%s where id = %s"
-    params = (currentPage, id)
+    params = (currentPage, food_class_id)
     print(sql % params)
     MysqlHelper.MysqlHelper().cud(sql, params)
 
 
 def loadFoodListPage(url, class1_id, class2_id):
-    print (url)
     divList = getContent(url).xpath('//div[@class="listtyle1"]/a')
     for div in divList:
         html_url = div.xpath("./@href")[0]
@@ -176,7 +181,6 @@ def loadFoodListPage(url, class1_id, class2_id):
 
 
 def loadFoodMaterialListPage(url, class1_id, class2_id):
-    print (url)
     divList = getContent(url).xpath('//div[@class="listtyle1"]')
     for div in divList:
         html_url = div.xpath('div[@class="img"]/a/@href')[0]

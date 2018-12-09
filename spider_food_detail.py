@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import datetime
+import random
 import re
 import sys
 import time
@@ -20,44 +21,63 @@ headers = {
 
 
 def getContent(url):
+    print(url)
     request = urllib2.Request(url, headers=headers)
     return etree.HTML(urllib2.urlopen(request).read())
 
 
 def loadFoodDetail():
     sql = "select id, html_url from lb_food where is_spider_detail = %s limit %s, %s "
-    params = (0, 0, 10)
+    params = (0, 1000, 3000)
+    # params = (0, 8000, 10000)
     print(sql % params)
     rows = MysqlHelper.MysqlHelper().fetchall(sql, params)
 
     for row in rows:
-        id, html_url = row
-        print(html_url)
+        food_id, html_url = row
         content = getContent(html_url)
-        # 爬取基本信息
-        spiderBaseInfo(id, content)
-        # 爬取评论数据
-        spiderComment(id, content)
-        # 爬取做法
-        spiderProcess(id, content)
-        # 爬取用料
-        spiderMaterial(id, content)
+        # content = getContent("https://www.meishij.net/zuofa/xiarenqiezhihuangdoumian.html")
+        print("爬取基本信息")
+        if spiderBaseInfo(food_id, content):
+            print("爬取评论数据")
+            if spiderComment(food_id, content):
+                print("爬取做法")
+                if spiderProcess(food_id, content):
+                    print("爬取用料")
+                    if spiderMaterial(food_id, content):
+                        # 更新状态
+                        updateSpiderDetail(food_id, 1)
+                        sleepRandom()
+                        continue
+                    else:
+                        print("爬取用料出错")
+                else:
+                    print("爬取做法出错")
+            else:
+                print("爬取评论数据出错")
+        else:
+            print("爬取基本信息出错")
 
-        # 更新状态
-        updateSpiderDetail(id)
-        # 休眠1秒
-        time.sleep(1)
+        updateSpiderDetail(food_id, 2)
+        sleepRandom()
 
 
-def updateSpiderDetail(id):
-    sql = "update lb_food set is_spider_detail = 1 where id = %s "
-    params = (id,)
+def sleepRandom():
+    m = random.randint(1, 3)
+    print("-------------休眠" + str(m) + "秒----------------")
+    time.sleep(m)
+
+
+def updateSpiderDetail(food_id, is_spider_detail):
+    sql = "update lb_food set is_spider_detail = %s where id = %s "
+    params = (is_spider_detail, food_id,)
     print(sql % params)
     MysqlHelper.MysqlHelper().cud(sql, params)
 
 
 def spiderProcess(food_id, content):
     divStepList = content.xpath("//div[@class='editnew edit']/div[@class='content clearfix']")
+    count = 0
     for div in divStepList:
         step = ""
         content = ""
@@ -79,15 +99,20 @@ def spiderProcess(food_id, content):
               " values ( %s, %s, %s, %s )"
         params = (food_id, step, content, img_url)
         # print(sql % params)
-        MysqlHelper.MysqlHelper().cud(sql, params)
+        if MysqlHelper.MysqlHelper().cud(sql, params) == 1:
+            count += 1
+
+    return count == len(divStepList)
 
 
 def spiderMaterial(food_id, content):
     divList = content.xpath("//div[@class='materials_box']/div")
-
+    count = 0
+    allCount = 0
     for div in divList:
         tag = div.xpath("h3/a/text()")[0]
         liList = div.xpath("ul/li")
+        allCount += len(liList)
         for li in liList:
             thumbnail_url = ""
             name = ""
@@ -119,7 +144,10 @@ def spiderMaterial(food_id, content):
                   " values ( %s, %s, %s, %s, %s )"
             params = (food_id, tag, name, thumbnail_url, dosage)
             # print(sql % params)
-            MysqlHelper.MysqlHelper().cud(sql, params)
+            if MysqlHelper.MysqlHelper().cud(sql, params) == 1:
+                count += 1
+
+    return allCount == count
 
 
 def spiderBaseInfo(food_id, content):
@@ -129,26 +157,26 @@ def spiderBaseInfo(food_id, content):
     if len(logo_url_list) > 0:
         logo_url = logo_url_list[0]
 
-    # favorite_num = "未知"
-    suitable_label = "未知"
-    cooking_method = "未知"
-    cooking_difficulty = "未知"
-    people_num = "未知"
-    cooking_taste = "未知"
-    ready_time = "未知"
-    cooking_time = "未知"
-    user_avatar_url = "未知"
-    user_id = "未知"
-    user_url = "未知"
-    user_grade = "未知"
-    final_img_url = "未知"
+    # favorite_num = ""
+    suitable_label = ""
+    cooking_method = ""
+    cooking_difficulty = ""
+    people_num = ""
+    cooking_taste = ""
+    ready_time = ""
+    cooking_time = ""
+    user_avatar_url = ""
+    user_id = 0
+    user_url = ""
+    user_grade = ""
+    final_img_url = ""
     infoDivList = content.xpath("//div/div[@class='cp_main_info_w']")
     for div in infoDivList:
         # xpath = div.xpath("div/span[@class='favbtns']/a/span")[0]
         # favorite_num = xpath.text
         tongjiList = div.xpath("div[@class='info1']//dt/a/text()")
-        for index in range(len(tongjiList)):
-            suitable_label += tongjiList[index] + ","
+        for tongji in tongjiList:
+            suitable_label += tongji + ","
         suitable_label = suitable_label[0:-1]
 
         cooking_method_list = div.xpath("div[@class='info2']/ul/li[1]//a/text()")
@@ -218,12 +246,13 @@ def spiderBaseInfo(food_id, content):
         ready_time, cooking_time, user_url, user_avatar_url, user_id, user_grade, materials_desc,
         final_img_url, cooking_skill, food_id)
     # print(sql % params)
-    MysqlHelper.MysqlHelper().cud(sql, params)
+    return MysqlHelper.MysqlHelper().cud(sql, params) == 1
 
 
 def spiderComment(food_id, content):
     # 爬取评论数据
     comlist = content.xpath("//div[@class='cp_comlist_w']/ul/li")
+    count = 0
     for c in comlist:
         content = c.xpath(".//p/strong")[0].tail.encode("utf-8").strip()
 
@@ -234,12 +263,16 @@ def spiderComment(food_id, content):
             commentTime = m[0]
         comment_time = datetime.datetime.strptime(commentTime, '%Y-%m-%d %H:%M:%S')
 
-        user_name = c.xpath("a/h5/text()")[0]
+        user_name = ""
+        user_name_list = c.xpath("a/h5/text()")
+        if len(user_name_list) > 0:
+            user_name = user_name_list[0]
+
         user_avatar_url = c.xpath("a/img/@src")[0]
 
         comHref = c.xpath("a/@href")
 
-        user_id = ""
+        user_id = 0
         user_url = ""
 
         if len(comHref) > 0:
@@ -260,7 +293,9 @@ def spiderComment(food_id, content):
               " user_url, content, comment_time) values ( %s, %s, %s, %s, %s, %s, %s)"
         params = (food_id, user_name, user_id, user_avatar_url, user_url, content, comment_time)
         # print(sql % params)
-        MysqlHelper.MysqlHelper().cud(sql, params)
+        if MysqlHelper.MysqlHelper().cud(sql, params) == 1:
+            count += 1
+    return count == len(comlist)
 
 
 if __name__ == "__main__":
